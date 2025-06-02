@@ -1,7 +1,7 @@
 const params = {Add commentMore actions
   headers: {
     Authorization: `Bearer ${import.meta.env.VITE_TMDB_TOKEN}`,
-    accept: "application / json",
+    
     accept: "application/json",
   },
 };
