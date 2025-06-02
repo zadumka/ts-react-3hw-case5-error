@@ -1,71 +1,89 @@
-import css from "./App.module.css";More actions
-import toast, { Toaster } from "react-hot-toast";
-import { fetchMovies } from "../../services/movieService";
-import SearchBar from "../SearchBar/SearchBar";
-import MovieGrid from "../MovieGrid/MovieGrid";
-import type { Movie } from "../../types/movie";
-import { useState } from "react";
-import MovieModal from "../MovieModal/MovieModal";
-import Loader from "../Loader/Loader";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
+import React, { useState, useCallback, useEffect } from 'react';
+import SearchBar from '../SearchBar/SearchBar';
+import MovieGrid from '../MovieGrid/MovieGrid';
+import Loader from '../Loader/Loader';
+import ErrorMessage from '../ErrorMessage/ErrorMessage';
+import MovieModal from '../MovieModal/MovieModal';
+import { fetchMovies } from '../../services/movieService';
+import type { Movie } from '../../types/movie';
+import toast, { Toaster } from 'react-hot-toast';
+import styles from './App.module.css';
 
-export default function App() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoad, setIsLoad] = useState(false);
-  
-  const [isError, setIsError] = useState(false);
-
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedMovie(null);
-  };
+const App: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
-
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  const handleSelectMovie = (movieId: number) => {
-    const result = movies.find((movie) => movie.id === movieId);
-    if (result) {
-      setSelectedMovie(result);
-    }
-    openModal();
-  };
+  // закриваю по ESC 
+  useEffect(() => {
+    if (!selectedMovie) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseModal();
+      }
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
 
-  
-  const handleSearch = async (query: string) => {
+    //  ESLint шоб не сварився и не видавав помилку
+  }, [selectedMovie]);
+
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query) {
+      toast.error('Please enter your search query.');
+      return;
+    }
     setMovies([]);
-    setIsLoad(true);
-   
-    setIsError(false);
+    setError(false);
+    setLoading(true);
     try {
       const data = await fetchMovies({ query });
-      if (data.length == 0) {
-        throw new Error("No movies found for your request.");
+      if (data.results.length === 0) {
+        toast('No movies found for your request.', { icon: '❌' });
       }
-      setMovies([...data]);
-      
-    } catch (error) {
-      toast.error(`${error}`);
-      setIsError(true);
+      setMovies(data.results);
+    } catch {
+      setError(true);
+      toast.error('There was an error, please try again...');
     } finally {
-      setIsLoad(false);
-     
+      setLoading(false);
+    }
+  }, []);
+
+  const handleSelectMovie = (movie: Movie) => {
+    setSelectedMovie(movie);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedMovie(null);
+  };
+
+  // закриваю модалку по кліку
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      handleCloseModal();
     }
   };
 
   return (
-    <div className={css.app}>
+    <div className={styles.app}>
       <Toaster position="top-center" />
       <SearchBar onSubmit={handleSearch} />
-      {movies.length > 0 && (
-        <MovieGrid movies={movies} onSelect={handleSelectMovie} />
+      {loading && <Loader />}
+      {error && <ErrorMessage />}
+      {!loading && !error && <MovieGrid movies={movies} onSelect={handleSelectMovie} />}
+      {selectedMovie && (
+        <div onClick={handleBackdropClick} style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
+          <MovieModal movie={selectedMovie} onClose={handleCloseModal} />
+      </div>
       )}
-      {isLoad && <Loader />}
-     
-      {isError && <ErrorMessage />}
-      {isModalOpen && <MovieModal movie={selectedMovie} onClose={closeModal} />}
-     
-    </div>
+      </div>
   );
-}
+};
+
+export default App;
