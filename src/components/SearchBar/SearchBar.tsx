@@ -1,57 +1,49 @@
-// Компонент SearchBar приймає один пропс onSubmit – функцію для передачі значення інпуту під час сабміту форми.More actions
-import styles from "./SearchBar.module.css";
-import toast from "react-hot-toast";
+import css from "./SearchBar.module.css";
+import toast, { Toaster } from 'react-hot-toast';
 
 interface SearchBarProps {
-  onSubmit: (query: string) => void;
+    onSubmit: (query: string) => void;
 }
 
-function SearchBar({ onSubmit }: SearchBarProps) {
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+export default function SearchBar ({onSubmit}: SearchBarProps) {
+   const handleSubmin = (formData: FormData) => {
+    const query = formData.get("query") as string;
 
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-  
-    const query = (formData.get("query") as string).trim();
+    const queryTrimmed = query.trim();
 
-    if (!query) {
-      toast.error("Please enter your search query.");
-      return;
-    }
+    if (queryTrimmed === '') {
+        toast.error('Please enter your search query.')
+        return
+    };
 
-    onSubmit(query);
-    form.reset();
-  };
+    onSubmit(queryTrimmed);
+   }
 
-  return (
-    <header className={styles.header}>
-      <div className={styles.container}>
+    return <header className={css.header}>
+      <div className={css.container}>
         <a
-          className={styles.link}
+          className={css.link}
           href="https://www.themoviedb.org/"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by TMDB
+         Powered by TMDB
         </a>
-        <form className={styles.form} onSubmit={handleSubmit}>
-        
+        <form className={css.form} action={handleSubmin}>
           <input
-            className={styles.input}
+            className={css.input}
             type="text"
             name="query"
             autoComplete="off"
             placeholder="Search movies..."
             autoFocus
-          />
-          <button className={styles.button} type="submit">
-            Search
-          </button>
+        />
+        <button className={css.button} type="submit">
+           Search 
+        </button>
+        <Toaster />
         </form>
       </div>
     </header>
-  );
-}More actions
-
-export default SearchBar;
+    
+}
